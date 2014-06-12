@@ -1,6 +1,7 @@
 import urwid
 import pstats
 
+
 class StatInfo(object):
     """
     An object that contains profiling stats for one function in one file.
@@ -37,28 +38,29 @@ class StatInfo(object):
 
         self.key_tuple = key_tuple
 
+
 class ProfileBrowser(object):
     """ A browser-type object that holds the StatNodes so they can be displayed via urwid. """
     palette = [
         ('body', 'black', 'light gray'),
-        ('flagged', 'black', 'dark green', ('bold','underline')),
+        ('flagged', 'black', 'dark green', ('bold', 'underline')),
         ('focus', 'light gray', 'dark blue', 'standout'),
         ('flagged focus', 'yellow', 'dark cyan',
-                ('bold','standout','underline')),
+            ('bold', 'standout', 'underline')),
         ('head', 'yellow', 'black', 'standout'),
         ('foot', 'light gray', 'black'),
-        ('key', 'light cyan', 'black','underline'),
+        ('key', 'light cyan', 'black', 'underline'),
         ('title', 'white', 'black', 'bold'),
         ('dirmark', 'black', 'dark cyan', 'bold'),
         ('flag', 'dark gray', 'light gray'),
         ('error', 'dark red', 'light gray'),
-        ]
+    ]
 
     def __init__(self, filename='myprof.profile'):
         self.stats = pstats.Stats(filename).stats
         self.root = StatInfo(
             ('Filename', "Line Number", 'Function'),
-            ('Number of Calls','Number of Calls', 'Total Time', 'Cumulative Time', self.stats)
+            ('Number of Calls', 'Number of Calls', 'Total Time', 'Cumulative Time', self.stats)
         )
         self.listbox = urwid.TreeListBox(urwid.TreeWalker(StatNode(self.root)))
         self.listbox.offset_rows = 1
@@ -67,15 +69,23 @@ class ProfileBrowser(object):
             header=urwid.AttrWrap(urwid.Text("lolerskater"), 'head'),
             footer=urwid.Text("roflcopter"))
 
+    def find_root(self):
+        """
+        In the default stats format, we only have the edges of the call tree graph but not the root.
+
+        This is an attempt to use reference counting to find the root efficiently.
+        """
+        pass
+
     def main(self):
         """ Run the program"""
-        self.loop = urwid.MainLoop(self.view, self.palette,
-            unhandled_input=self.unhandled_input)
-        self.loop.run()
+        loop = urwid.MainLoop(self.view, self.palette,
+                              unhandled_input=self.unhandled_input)
+        loop.run()
 
     def unhandled_input(self, k):
         # update display of focus directory
-        if k in ('q','Q'):
+        if k in ('q', 'Q'):
             raise urwid.ExitMainLoop()
 
 
@@ -111,11 +121,11 @@ class StatNode(urwid.ParentNode):
 
     def load_child_node(self, key):
         if key is None:
-            return EmptyNode(None)
+            return None
         else:
             children = self.stat_info.children_dictionary
             child = StatInfo(key, children[key])
-            return StatNode(child, parent=self, depth=self.depth+1)
+            return StatNode(child, parent=self, depth=self.depth + 1)
 
     def load_widget(self):
         return StatWidget(self)
@@ -148,9 +158,6 @@ class StatWidget(urwid.TreeWidget):
         Override this method to intercept keystrokes in subclasses.
         Default behavior: Toggle flagged on space, ignore other keys.
         """
-        if key == " ":
-            self.flagged = not self.flagged
-            self.update_w()
         if key == "e":
             #print self.expanded
             self.expanded = not self.expanded
