@@ -1,4 +1,5 @@
 import urwid
+import operator
 import pstats
 
 
@@ -32,9 +33,13 @@ class StatInfo(object):
         self.total_time = value_tuple[2]
         self.cumulative_time = value_tuple[3]
         if len(value_tuple) > 4:
-            self.children_dictionary = value_tuple[4]
+            self.parent_dictionary = value_tuple[4]
         else:
-            self.children_dictionary = None
+            self.parent_dictionary = None
+
+        self.children_dictionary = {}
+
+        self.reference_count = 0
 
         self.key_tuple = key_tuple
 
@@ -62,6 +67,10 @@ class ProfileBrowser(object):
             ('Filename', "Line Number", 'Function'),
             ('Number of Calls', 'Number of Calls', 'Total Time', 'Cumulative Time', self.stats)
         )
+
+        self.stat_infos = {}
+        self.root = self.construct_tree()
+
         self.listbox = urwid.TreeListBox(urwid.TreeWalker(StatNode(self.root)))
         self.listbox.offset_rows = 1
         self.view = urwid.Frame(
@@ -69,13 +78,37 @@ class ProfileBrowser(object):
             header=urwid.AttrWrap(urwid.Text("lolerskater"), 'head'),
             footer=urwid.Text("roflcopter"))
 
-    def find_root(self):
+    def construct_tree(self):
         """
         In the default stats format, we only have the edges of the call tree graph but not the root.
 
         This is an attempt to use reference counting to find the root efficiently.
         """
-        pass
+
+        # we need to construct all the StatInfo objects first so that we can
+        # add children to them as we iterate
+        for key in self.stats:
+            self.stat_infos[key] = StatInfo(key, self.stats[key])
+
+        # now create the right dictionary of children
+        for key in self.stats:
+            stat_info = self.stat_infos[key]
+            parents = stat_info.parent_dictionary.keys()
+            for parent in parents:
+                parent_info = self.stat_infos[parent]
+                # add this child to the parent's children dictionary
+                parent_info.children_dictionary[key] = stat_info
+                # increment the reference count of the stat_info object so we can sort by it later
+                stat_info.reference_count = stat_info.reference_count + 1
+
+        # get the list of stat infos so we can sort them by reference count and
+        # find the root node
+        stat_infos_list = self.stat_infos.values()
+        stat_infos_list.sort(key=lambda x: x.reference_count)
+
+        # the root is the node with the fewest number of references
+        return stat_infos_list[0]
+
 
     def main(self):
         """ Run the program"""
@@ -105,13 +138,12 @@ class StatNode(urwid.ParentNode):
         return self.parent
 
     def load_child_keys(self):
-        # TODO: Sort children at this point in the flow.
         children = self.stat_info.children_dictionary
         if children:
             # We pull the contents of the child dictionary into a list so we can sort them.
             child_list = []
             for key in children:
-                child_list.append(StatInfo(key, children[key]))
+                child_list.append(children[key])
             # Sort by total_time in descending order.
             child_list.sort(key=lambda x: x.total_time, reverse=True)
             # Return a list of only the keys.
@@ -124,7 +156,7 @@ class StatNode(urwid.ParentNode):
             return None
         else:
             children = self.stat_info.children_dictionary
-            child = StatInfo(key, children[key])
+            child = children[key]
             return StatNode(child, parent=self, depth=self.depth + 1)
 
     def load_widget(self):
@@ -141,7 +173,7 @@ class StatWidget(urwid.TreeWidget):
     def get_display_text(self):
         stat_info = self.get_node().stat_info
         # TODO: Decide what we most want to display here.
-        return ' '.join([stat_info.filename, str(stat_info.total_time)])
+        return ' '.join([stat_info.filename, stat_info.function_name, str(stat_info.total_time)])
 
     def selectable(self):
         return True
