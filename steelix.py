@@ -65,14 +65,21 @@ class ProfileBrowser(object):
         )
 
         self.stat_infos = {}
-        self.root = self.construct_tree()
+        self.roots = self.construct_tree()
 
-        self.listbox = urwid.TreeListBox(urwid.TreeWalker(StatNode(self.root)))
-        self.listbox.offset_rows = 1
-        self.view = urwid.Frame(
-            urwid.AttrWrap(self.listbox, 'body'),
-            header=urwid.AttrWrap(urwid.Text("Steelix"), 'head'),
-            footer=urwid.Text("+/- to expand/collapse entries, q to quit"))
+        # We can have many roots (i.e. line info that is not called by other
+        # things in the data). We construct a separate tree view for each one
+        header = ('pack', urwid.AttrWrap(urwid.Text("Steelix"), 'head'))
+        footer = ('pack', urwid.Text("+/- to expand/collapse entries, q to quit"))
+        widget_list = [header]
+        for root in self.roots:
+            listbox = urwid.TreeListBox(urwid.TreeWalker(StatNode(root)))
+            listbox.offset_rows = 1
+            widget_list.append(urwid.AttrWrap(listbox, 'body'))
+
+        widget_list.append(footer)
+
+        self.view = urwid.Pile(widget_list)
 
     def construct_tree(self):
         """
@@ -100,10 +107,11 @@ class ProfileBrowser(object):
         # get the list of stat infos so we can sort them by reference count and
         # find the root node
         stat_infos_list = self.stat_infos.values()
-        stat_infos_list.sort(key=lambda x: x.reference_count)
 
-        # the root is the node with the fewest number of references
-        return stat_infos_list[0]
+        #filter out all of the nodes that don't have any references
+        root_nodes = [stat_info for stat_info in stat_infos_list if stat_info.reference_count == 0]
+
+        return root_nodes
 
     def main(self):
         """ Run the program"""
