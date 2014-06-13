@@ -180,9 +180,25 @@ class StatWidget(urwid.TreeWidget):
         self.update_expanded_icon()
 
     def get_display_text(self):
+        """
+        Generate the text that will be shown in the view
+        """
         stat_info = self.get_node().stat_info
         # TODO: Decide what we most want to display here.
-        return ' '.join([stat_info.filename, stat_info.function_name, str(stat_info.total_time)])
+        filename = self.truncate_filename(stat_info.filename)
+
+        return ' '.join([filename, stat_info.function_name, str(stat_info.total_time)])
+
+    def truncate_filename(self, name):
+        """ Truncate the filename so that it doesn't take up so much space """
+        parts_split = name.split('/')
+        # if there are more than TRAIL_LENGTH directories in the filename
+        # take only the last TRAIL_LENGTH
+        TRAIL_LENGTH = 3
+        if len(parts_split) > TRAIL_LENGTH:
+            return ".../" + "/".join(parts_split[-TRAIL_LENGTH:])
+        else:
+            return name
 
     def selectable(self):
         return True
