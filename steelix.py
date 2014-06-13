@@ -59,26 +59,33 @@ class ProfileBrowser(object):
 
     def __init__(self, filename):
         self.stats = pstats.Stats(filename).stats
-        self.root = StatInfo(
-            ('Filename', "Line Number", 'Function'),
-            ('Number of Calls', 'Number of Calls', 'Total Time', 'Cumulative Time', self.stats)
-        )
 
         self.stat_infos = {}
-        self.root = self.construct_tree()
+        self.roots = self.construct_tree()
 
-        self.listbox = urwid.TreeListBox(urwid.TreeWalker(StatNode(self.root)))
-        self.listbox.offset_rows = 1
-        self.view = urwid.Frame(
-            urwid.AttrWrap(self.listbox, 'body'),
-            header=urwid.AttrWrap(urwid.Text("Steelix"), 'head'),
-            footer=urwid.Text("+/- to expand/collapse entries, q to quit"))
+        # we unfortunately need to construct this child dictionary by hand to
+        # get the root to behave the way we want
+        self.root_children = {stat_info.key_tuple: stat_info for stat_info in self.roots}
+        self.root = StatInfo(
+            ('Filename', "Line Number", 'Function'),
+            ('Number of Calls', 'Number of Calls', 'Total Time', 'Cumulative Time')
+        )
+        self.root.children_dictionary = self.root_children
+
+        # We can have many roots (i.e. line info that is not called by other
+        # things in the data). We construct a separate tree view for each one
+        header = urwid.AttrWrap(urwid.Text("Steelix"), 'head')
+        footer = urwid.Text("+/- to expand/collapse entries, q to quit")
+        listbox = urwid.TreeListBox(urwid.TreeWalker(StatNode(self.root)))
+        listbox.offset_rows = 1
+
+        self.view = urwid.Frame(listbox, header=header, footer=footer)
 
     def construct_tree(self):
         """
         In the default stats format, we only have the edges of the call tree graph but not the root.
 
-        This is an attempt to use reference counting to find the root efficiently.
+        This is an attempt to use reference counting to find the roots efficiently.
         """
 
         # we need to construct all the StatInfo objects first so that we can
@@ -99,11 +106,10 @@ class ProfileBrowser(object):
 
         # get the list of stat infos so we can sort them by reference count and
         # find the root node
-        stat_infos_list = self.stat_infos.values()
-        stat_infos_list.sort(key=lambda x: x.reference_count)
+        stat_infos_list = [stat_info for stat_info in self.stat_infos.values() if stat_info.reference_count == 0]
 
         # the root is the node with the fewest number of references
-        return stat_infos_list[0]
+        return stat_infos_list
 
     def main(self):
         """ Run the program"""
