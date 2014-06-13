@@ -187,7 +187,12 @@ class StatWidget(urwid.TreeWidget):
         # TODO: Decide what we most want to display here.
         filename = self.truncate_filename(stat_info.filename)
 
-        return ' '.join([filename, stat_info.function_name, str(stat_info.total_time)])
+        first_line = '{0}:{1}({2})'.format(filename, str(stat_info.line_number), stat_info.function_name)
+        second_line = 'number of calls: {0}  total time: {1}  cumulative time: {2}'.format(
+            str(stat_info.num_calls), str(stat_info.total_time), str(stat_info.cumulative_time)
+        )
+
+        return first_line + '\n' + second_line
 
     def truncate_filename(self, name):
         """ Truncate the filename so that it doesn't take up so much space """
