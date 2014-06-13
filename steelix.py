@@ -75,8 +75,8 @@ class ProfileBrowser(object):
         self.listbox.offset_rows = 1
         self.view = urwid.Frame(
             urwid.AttrWrap(self.listbox, 'body'),
-            header=urwid.AttrWrap(urwid.Text("lolerskater"), 'head'),
-            footer=urwid.Text("roflcopter"))
+            header=urwid.AttrWrap(urwid.Text("Steelix"), 'head'),
+            footer=urwid.Text("+/- to expand/collapse entries, q to quit"))
 
     def construct_tree(self):
         """
