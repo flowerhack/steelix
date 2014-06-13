@@ -231,6 +231,7 @@ def main():
         filename = sys.argv[1]
     else:
         print 'Please include a profile file as an argument'
+        return
     ProfileBrowser(filename).main()
 
 
