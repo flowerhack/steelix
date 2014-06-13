@@ -109,7 +109,6 @@ class ProfileBrowser(object):
         # the root is the node with the fewest number of references
         return stat_infos_list[0]
 
-
     def main(self):
         """ Run the program"""
         loop = urwid.MainLoop(self.view, self.palette,
@@ -117,11 +116,9 @@ class ProfileBrowser(object):
         loop.run()
 
     def unhandled_input(self, k):
-        # update display of focus directory
+        """ Allow us to quit out of the program"""
         if k in ('q', 'Q'):
             raise urwid.ExitMainLoop()
-
-
 
 
 class StatNode(urwid.ParentNode):
@@ -135,9 +132,15 @@ class StatNode(urwid.ParentNode):
         urwid.ParentNode.__init__(self, stat_info, key=self.key, parent=parent, depth=depth)
 
     def load_parent(self):
+        """
+        Load the parent node
+        """
         return self.parent
 
     def load_child_keys(self):
+        """
+        Return a list of child keys for this node
+        """
         children = self.stat_info.children_dictionary
         if children:
             # We pull the contents of the child dictionary into a list so we can sort them.
@@ -152,6 +155,9 @@ class StatNode(urwid.ParentNode):
             return []
 
     def load_child_node(self, key):
+        """
+        Construct and return the StatNode for the given key
+        """
         if key is None:
             return None
         else:
@@ -160,6 +166,9 @@ class StatNode(urwid.ParentNode):
             return StatNode(child, parent=self, depth=self.depth + 1)
 
     def load_widget(self):
+        """
+        Return a Widget associated with this Node
+        """
         return StatWidget(self)
 
 
@@ -196,12 +205,18 @@ class StatWidget(urwid.TreeWidget):
         else:
             return key
 
-def main(filename):
-    ProfileBrowser().main(filename)
 
-if __name__=="__main__":
-    if len(sys.argv) > 2:
+def main():
+    """
+    Run the program
+    """
+    # get the first argument as the filename of the profile we are analyzing
+    if len(sys.argv) > 1:
         filename = sys.argv[1]
-        main(filename)
     else:
         print 'Please include a profile file as an argument'
+    ProfileBrowser(filename).main()
+
+
+if __name__ == "__main__":
+    main()
