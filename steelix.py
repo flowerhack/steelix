@@ -47,18 +47,14 @@ class StatInfo(object):
 class ProfileBrowser(object):
     """ A browser-type object that holds the StatNodes so they can be displayed via urwid. """
     palette = [
-        ('body', 'black', 'light gray'),
-        ('flagged', 'black', 'dark green', ('bold', 'underline')),
+        ('body', 'light green', 'black'),
         ('focus', 'light gray', 'dark blue', 'standout'),
-        ('flagged focus', 'yellow', 'dark cyan',
-            ('bold', 'standout', 'underline')),
-        ('head', 'yellow', 'black', 'standout'),
+        ('head', 'black', 'brown', 'standout'),
         ('foot', 'light gray', 'black'),
         ('key', 'light cyan', 'black', 'underline'),
         ('title', 'white', 'black', 'bold'),
-        ('dirmark', 'black', 'dark cyan', 'bold'),
-        ('flag', 'dark gray', 'light gray'),
-        ('error', 'dark red', 'light gray'),
+        ('evenrow', 'brown', 'black'),
+        ('oddrow', 'dark green', 'black'),
     ]
 
     def __init__(self, filename):
@@ -178,6 +174,11 @@ class StatWidget(urwid.TreeWidget):
         super(StatWidget, self).__init__(node)
         self.expanded = False
         self.update_expanded_icon()
+        self._w = urwid.AttrWrap(self._w, None)
+        if node.depth / 2 == 0:
+            self._w.attr = 'evenrow'
+        else:
+            self._w.attr = 'oddrow'
 
     def get_display_text(self):
         """
