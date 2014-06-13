@@ -1,5 +1,5 @@
+import sys
 import urwid
-import operator
 import pstats
 
 
@@ -61,7 +61,7 @@ class ProfileBrowser(object):
         ('error', 'dark red', 'light gray'),
     ]
 
-    def __init__(self, filename='myprof.profile'):
+    def __init__(self, filename):
         self.stats = pstats.Stats(filename).stats
         self.root = StatInfo(
             ('Filename', "Line Number", 'Function'),
@@ -196,11 +196,12 @@ class StatWidget(urwid.TreeWidget):
         else:
             return key
 
-    def update_w(self):
-        pass
-
-def main():
-    ProfileBrowser().main()
+def main(filename):
+    ProfileBrowser().main(filename)
 
 if __name__=="__main__":
-    main()
+    if len(sys.argv) > 2:
+        filename = sys.argv[1]
+        main(filename)
+    else:
+        print 'Please include a profile file as an argument'
